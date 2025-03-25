@@ -39,7 +39,7 @@ def register_user(session: Session, name: str, email: str, male: bool, password:
     session.refresh(user)
     
     # Создаем аккаунт для пользователя
-    account = Account(user_id=user.user_id, balance=0.0)
+    account = Account(id=user.id, balance=0.0)
     session.add(account)
     session.commit()
     

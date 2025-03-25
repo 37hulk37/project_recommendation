@@ -1,8 +1,12 @@
-from sqlmodel import SQLModel, Session, create_engine
-from contextlib import contextmanager
-from .config import get_settings
 import time
+
+from sqlalchemy import create_engine
 from sqlalchemy.exc import OperationalError
+from sqlalchemy.orm import sessionmaker, declarative_base
+
+from .config import get_settings
+
+Base = declarative_base()
 
 def wait_for_db(retries=5, delay=2):
     for i in range(retries):
@@ -23,11 +27,12 @@ def wait_for_db(retries=5, delay=2):
     raise Exception("Could not connect to database")
 
 engine = wait_for_db()
+SessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=engine)
 
 def get_session():
-    with Session(engine) as session:
+    with SessionLocal() as session:
         yield session
 
 def init_db():
-    SQLModel.metadata.drop_all(engine)
-    SQLModel.metadata.create_all(engine)
+    Base.metadata.drop_all(engine)
+    Base.metadata.create_all(engine)

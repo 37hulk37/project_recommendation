@@ -1,25 +1,25 @@
-from fastapi import FastAPI, Depends, HTTPException, status, Response
-from fastapi.security import HTTPBasic, HTTPBasicCredentials, OAuth2PasswordBearer, OAuth2PasswordRequestForm
-from sqlalchemy.orm import Session
-from typing import List, Optional
-import os, sys
+from fastapi import FastAPI, Depends, HTTPException, status
+import os
 from datetime import datetime, timedelta
-import secrets
-import base64
+from typing import List, Optional
+
+from fastapi import FastAPI, Depends, HTTPException, status
+from fastapi.security import HTTPBasic, OAuth2PasswordBearer, OAuth2PasswordRequestForm
 from jose import JWTError, jwt
 from passlib.context import CryptContext
+from sqlalchemy.orm import Session
 
 from database.database import init_db, get_session
-from services.crud.user import register_user, get_user_by_id, get_user_by_email
-from services.crud.account import get_account_by_user_id, update_account_balance
-from services.queue_service import QueueService
-from models.types import (
-    UserCreate, UserLogin, UserResponse, AccountResponse,
-    PredictionRequest, Token, Item, ItemCreate, ItemResponse,
-    PredictionResponse, SimilarItem
-)
-from models.prediction import Prediction
 from models.item import Item as ItemDB
+from models.prediction import Prediction
+from models.types import (
+    UserCreate, UserResponse, AccountResponse,
+    PredictionRequest, Token, ItemCreate, ItemResponse,
+    PredictionResponse, EXECUTION_COST
+)
+from services.crud.account import get_account_by_user_id, update_account_balance
+from services.crud.user import register_user, get_user_by_email
+from services.queue_service import QueueService
 
 app = FastAPI(title="Fashion Recommendation Service")
 security = HTTPBasic()
@@ -83,7 +83,7 @@ async def startup_event():
             name="Demo User",
             male=True
         )
-        register_user(session=session, **demo_user.dict())
+        register_user(session=session, **demo_user.model_dump())
 
 # Эндпоинты аутентификации
 @app.post("/register", response_model=UserResponse)

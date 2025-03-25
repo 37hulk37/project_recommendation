@@ -1,18 +1,31 @@
-from item import Item
-from prediction import PredictionHistory
-from .types import EXECUTION_COST
+from datetime import datetime
+from typing import List
+
+from sqlalchemy import Column, Integer, String, DateTime, ForeignKey
+from sqlalchemy.orm import relationship
+from sqlmodel import Session
+
+from .item import Item
+from .types import EXECUTION_COST, PredictionRequest
+from ..database.database import Base
 from ..services.crud.account import get_account_by_user_id, update_account_balance
-from ..services.crud.prediction import create_prediction_history
 from ..services.crud.user import get_user_by_id
 
-from sqlmodel import SQLModel, Field, Relationship, Session
-from typing import Optional, List
-from .prediction import PredictionRequest
 
+class MLModel(Base):
+    __tablename__ = "mlmodel"
 
-class MLModel(SQLModel, table=True):
-    model_id: Optional[int] = Field(default=None, primary_key=True)
-    name: str
+    id = Column(Integer, primary_key=True, index=True)
+    name = Column(String, nullable=False)
+    version = Column(String, nullable=False)
+    created_at = Column(DateTime, default=datetime.utcnow)
+    updated_at = Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
+    status = Column(String, nullable=False)  # active, inactive, deprecated
+    model_path = Column(String, nullable=False)
+    description = Column(String, nullable=True)
+
+    # Отношения
+    ml_tasks = relationship("MLTask", back_populates="model")
 
     def predict(self, session: Session, clothing_items: List[Item]) -> Item:
         if not clothing_items:
@@ -46,13 +59,14 @@ class MLModel(SQLModel, table=True):
                     clothing_items=request.clothing_items
                 )
 
-                history = PredictionHistory(
-                    user_id=self.user_id,
-                    request_id=self.request_id,
-                    predicted_item_id=predicted_item.item_id,
-                    cost=EXECUTION_COST
-                )
-                create_prediction_history(session=session, history=history)
+                # TODO: Реализовать сохранение истории предсказаний
+                # history = PredictionHistory(
+                #     user_id=self.user_id,
+                #     request_id=self.request_id,
+                #     predicted_item_id=predicted_item.item_id,
+                #     cost=EXECUTION_COST
+                # )
+                # create_prediction_history(session=session, history=history)
 
                 return predicted_item
             else:
@@ -69,12 +83,15 @@ class MLModel(SQLModel, table=True):
             raise e
 
 
-class MLTask(SQLModel, table=True):
-    task_id: Optional[int] = Field(default=None, primary_key=True)
-    user_id: int = Field(foreign_key="user.user_id")
-    request_id: int = Field(foreign_key="predictionrequest.request_id")
-    model_id: int = Field(foreign_key="mlmodel.model_id")
+class MLTask(Base):
+    __tablename__ = "ml_task"
 
-    user: Optional["User"] = Relationship()
-    request: Optional[PredictionRequest] = Relationship()
-    model: Optional[MLModel] = Relationship()
+    task_id = Column(Integer, primary_key=True, index=True)
+    user_id = Column(Integer, ForeignKey("user.id"))
+    request_id = Column(Integer, ForeignKey("predictionrequest.request_id"))
+    model_id = Column(Integer, ForeignKey("mlmodel.id"))
+
+    # Отношения
+    user = relationship("User", back_populates="ml_tasks")
+    request = relationship("PredictionRequest", back_populates="ml_tasks")
+    model = relationship("MLModel", back_populates="ml_tasks")

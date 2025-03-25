@@ -1,16 +1,16 @@
-from sqlmodel import SQLModel, Field, Relationship
-from typing import Optional
-from sqlmodel import Session
+from sqlalchemy import Column, Integer, Float, ForeignKey
+from sqlalchemy.orm import relationship
 
+from app.database.database import Base
 
-class Account(SQLModel, table=True):
-    account_id: Optional[int] = Field(default=None, primary_key=True)
-    balance: float = Field(default=0.0)
-    user_id: int = Field(foreign_key="user.user_id")
+class Account(Base):
+    __tablename__ = "account"
+    __table_args__ = {'extend_existing': True}
 
-    user: Optional["User"] = Relationship(back_populates="account")
+    id = Column(Integer, primary_key=True, index=True)
+    balance = Column(Float, nullable=False, default=0.0)
 
-    def deduct_balance(self, session: Session, amount: float):
+    def deduct_balance(self, session, amount: float):
         if self.balance >= amount:
             self.balance -= amount
             session.add(self)
@@ -19,7 +19,7 @@ class Account(SQLModel, table=True):
         else:
             raise ValueError("Недостаточно средств на балансе")
 
-    def add_balance(self, session: Session, amount: float):
+    def add_balance(self, session, amount: float):
         if amount > 0:
             self.balance += amount
             session.add(self)

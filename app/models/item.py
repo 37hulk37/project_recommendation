@@ -1,19 +1,19 @@
-from sqlmodel import SQLModel, Field, Relationship
-from typing import Optional, List
-from .types import Color, Material, ClothingStyle, Size, Category
-from sqlalchemy import Column, Enum
+from sqlalchemy import Column, Integer, String, Float, Enum
+
+from app.models.types import Color, Material, ClothingStyle, Size, Category
+from app.database.database import Base
 
 
-class Item(SQLModel, table=True):
-    item_id: Optional[int] = Field(default=None, primary_key=True)
-    name: str
-    description: str
-    color: Color = Field(sa_column=Column(Enum(Color)))
-    material: Material = Field(sa_column=Column(Enum(Material)))
-    category: Category = Field(sa_column=Column(Enum(Category)))
-    price: float
-    style: ClothingStyle = Field(sa_column=Column(Enum(ClothingStyle)))
-    size: Size = Field(sa_column=Column(Enum(Size)))
+class Item(Base):
+    __tablename__ = "item"
+    __table_args__ = {'extend_existing': True}
 
-    predictions: List["Prediction"] = Relationship(back_populates="item")
-    similar_items: List["SimilarItem"] = Relationship(back_populates="item")
+    item_id = Column(Integer, primary_key=True, index=True)
+    name = Column(String, nullable=False)
+    description = Column(String, nullable=False)
+    color = Column(Enum(Color), nullable=True)
+    material = Column(Enum(Material), nullable=True)
+    category = Column(Enum(Category), nullable=True)
+    price = Column(Float, nullable=False)
+    style = Column(Enum(ClothingStyle), nullable=True)
+    size = Column(Enum(Size), nullable=True)

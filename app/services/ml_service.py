@@ -6,6 +6,12 @@ from models.prediction import Prediction, SimilarItem as SimilarItemDB
 from sqlmodel import Session
 import os
 from dotenv import load_dotenv
+from sqlalchemy.orm import Session
+from app.models.item import Item
+from app.models.prediction import Prediction
+from app.models.types import EXECUTION_COST
+from app.services.crud.account import get_account_by_user_id, update_account_balance
+from app.services.crud.user import get_user_by_id
 
 load_dotenv()
 
@@ -58,6 +64,15 @@ class MLService:
         
         return similar_items
 
+    def predict(self, session: Session, clothing_items: List[Item]) -> Item:
+        """Предсказывает похожие товары"""
+        if not clothing_items:
+            raise ValueError("Список вещей для предсказания пуст")
+
+        # TODO: Реализовать логику предсказания
+        # Временная заглушка - возвращаем первый элемент
+        return clothing_items[0]
+
     def process_prediction(self, prediction: Prediction, session: Session) -> None:
         """Обрабатывает предсказание и сохраняет результаты"""
         try:
@@ -67,23 +82,11 @@ class MLService:
                 raise Exception(f"Item {prediction.item_id} not found")
 
             # Получаем похожие товары
-            similar_items = self.get_similar_items(item)
+            similar_items = self.predict(session, [item])
 
-            # Сохраняем результаты
-            total_cost = 0.0
-            for similar_item in similar_items:
-                similar_item_db = SimilarItemDB(
-                    prediction_id=prediction.prediction_id,
-                    item_id=similar_item.item.item_id,
-                    similarity_score=similar_item.similarity_score,
-                    cost=EXECUTION_COST  # Используем константу из конфигурации
-                )
-                session.add(similar_item_db)
-                total_cost += EXECUTION_COST
-
-            # Обновляем статус и общую стоимость предсказания
+            # Обновляем статус предсказания
             prediction.status = "completed"
-            prediction.total_cost = total_cost
+            prediction.total_cost = EXECUTION_COST
             session.commit()
 
         except Exception as e:
