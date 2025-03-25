@@ -1,30 +1,47 @@
 import json
 import pika
+import time
 from typing import Callable, Dict, Any
-import os
+from database.config import get_settings
 
 class QueueService:
-    def __init__(self):
+    def __init__(self, max_retries=5, retry_delay=5):
         self.connection = None
         self.channel = None
         self.queue_name = "ml_tasks"
+        self.settings = get_settings()
+        self.max_retries = max_retries
+        self.retry_delay = retry_delay
         self.connect()
 
     def connect(self):
-        # Получаем параметры подключения из переменных окружения
-        rabbitmq_host = os.getenv("RABBITMQ_HOST", "localhost")
-        rabbitmq_port = int(os.getenv("RABBITMQ_PORT", "5672"))
-        rabbitmq_user = os.getenv("RABBITMQ_USER", "guest")
-        rabbitmq_pass = os.getenv("RABBITMQ_PASS", "guest")
+        retries = 0
+        while retries < self.max_retries:
+            try:
+                # Получаем параметры подключения из настроек
+                credentials = pika.PlainCredentials(
+                    self.settings.RABBITMQ_USER,
+                    self.settings.RABBITMQ_PASS
+                )
+                parameters = pika.ConnectionParameters(
+                    host=self.settings.RABBITMQ_HOST,
+                    port=self.settings.RABBITMQ_PORT,
+                    credentials=credentials,
+                    heartbeat=600,
+                    blocked_connection_timeout=300
+                )
+                self.connection = pika.BlockingConnection(parameters)
+                self.channel = self.connection.channel()
 
-        # Создаем подключение
-        credentials = pika.PlainCredentials(rabbitmq_user, rabbitmq_pass)
-        parameters = pika.ConnectionParameters(host=rabbitmq_host, port=rabbitmq_port, credentials=credentials)
-        self.connection = pika.BlockingConnection(parameters)
-        self.channel = self.connection.channel()
-
-        # Объявляем очередь
-        self.channel.queue_declare(queue=self.queue_name, durable=True)
+                # Объявляем очередь
+                self.channel.queue_declare(queue=self.queue_name, durable=True)
+                return
+            except pika.exceptions.AMQPConnectionError as e:
+                retries += 1
+                if retries == self.max_retries:
+                    raise e
+                print(f"Failed to connect to RabbitMQ. Retrying in {self.retry_delay} seconds... (Attempt {retries}/{self.max_retries})")
+                time.sleep(self.retry_delay)
 
     def publish_task(self, task_data: Dict[str, Any]):
         """Отправляет задачу в очередь"""

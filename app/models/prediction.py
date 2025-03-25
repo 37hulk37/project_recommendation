@@ -2,7 +2,7 @@ from datetime import datetime
 
 from sqlalchemy import Column, Integer, Float, String, ForeignKey, DateTime
 
-from app.database.database import Base
+from database.database import Base
 
 
 class SimilarItem(Base):

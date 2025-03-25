@@ -1,7 +1,7 @@
 from sqlalchemy import Column, Integer, String, Float, Enum
 
-from app.models.types import Color, Material, ClothingStyle, Size, Category
-from app.database.database import Base
+from models.types import Color, Material, ClothingStyle, Size, Category
+from database.database import Base
 
 
 class Item(Base):

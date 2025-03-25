@@ -6,9 +6,9 @@ from sqlmodel import Session
 
 from .item import Item
 from .types import EXECUTION_COST, PredictionRequest
-from ..database.database import Base
-from ..services.crud.account import get_account_by_user_id, update_account_balance
-from ..services.crud.user import get_user_by_id
+from database.database import Base
+from services.crud.account import get_account_by_user_id, update_account_balance
+from services.crud.user import get_user_by_id
 
 
 class MLModel(Base):

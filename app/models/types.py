@@ -19,7 +19,7 @@ class Category(Enum):
 
 
 class ClothingStyle(Enum):
-    SPORTY = "Sporty "
+    SPORTY = "Sporty"
     CASUAL = "Casual"
     CLASSIC = "Classic"
     STREETWEAR = "Streetwear"

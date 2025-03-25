@@ -1,6 +1,6 @@
 import time
 
-from sqlalchemy import create_engine
+from sqlalchemy import create_engine, text
 from sqlalchemy.exc import OperationalError
 from sqlalchemy.orm import sessionmaker, declarative_base
 
@@ -34,5 +34,14 @@ def get_session():
         yield session
 
 def init_db():
-    Base.metadata.drop_all(engine)
+    # Сначала удаляем все таблицы с зависимостями
+    with engine.connect() as conn:
+        conn.execute(text('DROP TABLE IF EXISTS "similar_item" CASCADE'))
+        conn.execute(text('DROP TABLE IF EXISTS "prediction" CASCADE'))
+        conn.execute(text('DROP TABLE IF EXISTS "item" CASCADE'))
+        conn.execute(text('DROP TABLE IF EXISTS "account" CASCADE'))
+        conn.execute(text('DROP TABLE IF EXISTS "user" CASCADE'))
+        conn.commit()
+    
+    # Затем создаем все таблицы заново
     Base.metadata.create_all(engine)

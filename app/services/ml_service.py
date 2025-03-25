@@ -7,11 +7,9 @@ from sqlmodel import Session
 import os
 from dotenv import load_dotenv
 from sqlalchemy.orm import Session
-from app.models.item import Item
-from app.models.prediction import Prediction
-from app.models.types import EXECUTION_COST
-from app.services.crud.account import get_account_by_user_id, update_account_balance
-from app.services.crud.user import get_user_by_id
+from models.item import Item
+from models.prediction import Prediction
+from models.types import EXECUTION_COST
 
 load_dotenv()
 

@@ -1,6 +1,8 @@
 from typing import List, Optional
 from sqlmodel import Session
-from app.models import User, Account
+
+from models.account import Account
+from models.user import User
 
 
 def get_all_users(session: Session) -> List[User]:

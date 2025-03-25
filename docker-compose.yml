@@ -11,8 +11,10 @@ services:
     volumes:
       - ./app:/app
     depends_on:
-      - rabbitmq
-      - database
+      rabbitmq:
+        condition: service_healthy
+      database:
+        condition: service_healthy
 
   web-proxy:
     image: nginx:latest
@@ -34,8 +36,10 @@ services:
     volumes:
       - ./app:/app
     depends_on:
-      - database
-      - rabbitmq
+      database:
+        condition: service_healthy
+      rabbitmq:
+        condition: service_healthy
 
   worker2:
     build: ./app
@@ -46,24 +50,31 @@ services:
     volumes:
       - ./app:/app
     depends_on:
-      - database
-      - rabbitmq
+      database:
+        condition: service_healthy
+      rabbitmq:
+        condition: service_healthy
 
   rabbitmq:
-    image: rabbitmq:latest
+    image: rabbitmq:3-management
     container_name: recomendation-rabbitmq
     ports:
-      - "15672:15672"
       - "5672:5672"
+      - "15672:15672"
     environment:
-      RABBITMQ_DEFAULT_USER: myuser
-      RABBITMQ_DEFAULT_PASS: mypassword
+      - RABBITMQ_DEFAULT_USER=guest
+      - RABBITMQ_DEFAULT_PASS=guest
     volumes:
       - rabbitmq_data:/var/lib/rabbitmq
     restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "rabbitmq-diagnostics", "check_port_connectivity"]
+      interval: 30s
+      timeout: 10s
+      retries: 5
 
   database:
-    image: postgres:latest
+    image: postgres:13
     container_name: recomendation-db
     environment:
       POSTGRES_DB: postgres
@@ -73,6 +84,11 @@ services:
       - "5432:5432"
     volumes:
       - postgres_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U myuser -d postgres"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
 
 volumes:
   rabbitmq_data:
