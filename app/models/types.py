@@ -76,15 +76,25 @@ class UserLogin(BaseModel):
 
 
 class UserResponse(BaseModel):
-    user_id: int
+    id: int
     email: str
     name: str
     male: bool
 
+    class Config:
+        orm_mode = True
+        allow_population_by_field_name = True
+        from_attributes = True
+
 
 class AccountResponse(BaseModel):
-    user_id: int
+    id: int
     balance: float
+
+    class Config:
+        orm_mode = True
+        allow_population_by_field_name = True
+        from_attributes = True
 
 
 class Item(BaseModel):
@@ -121,6 +131,11 @@ class ItemResponse(BaseModel):
     price: float
     description: str
 
+    class Config:
+        orm_mode = True
+        allow_population_by_field_name = True
+        from_attributes = True
+
 
 class SimilarItem(BaseModel):
     item: ItemResponse
@@ -137,6 +152,11 @@ class PredictionResponse(BaseModel):
     similar_items: List[SimilarItem]
     status: str  # "pending", "processing", "completed", "failed"
     error_message: Optional[str] = None
+
+    class Config:
+        orm_mode = True
+        allow_population_by_field_name = True
+        from_attributes = True
 
 
 class Token(BaseModel):

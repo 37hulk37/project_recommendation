@@ -1,4 +1,3 @@
-from fastapi import FastAPI, Depends, HTTPException, status
 import os
 from datetime import datetime, timedelta
 from typing import List, Optional
@@ -93,7 +92,7 @@ def create_user(user: UserCreate, session: Session = Depends(get_session)):
         raise HTTPException(status_code=400, detail="Email already registered")
     user_dict = user.dict()
     user_dict["password"] = get_password_hash(user_dict["password"])
-    return register_user(session=session, **user_dict)
+    return UserResponse.from_orm(register_user(session=session, **user_dict))
 
 @app.post("/login", response_model=Token)
 async def login(form_data: OAuth2PasswordRequestForm = Depends(), session: Session = Depends(get_session)):
@@ -114,16 +113,16 @@ async def login(form_data: OAuth2PasswordRequestForm = Depends(), session: Sessi
 # Эндпоинты для работы с аккаунтом
 @app.get("/account", response_model=AccountResponse)
 def get_account(current_user = Depends(get_current_user), session: Session = Depends(get_session)):
-    account = get_account_by_user_id(session, current_user.user_id)
-    return account
+    account = get_account_by_user_id(session, current_user.id)
+    return AccountResponse.from_orm(account)
 
 @app.post("/account/deposit")
 def deposit_money(amount: float, current_user = Depends(get_current_user), session: Session = Depends(get_session)):
     if amount <= 0:
         raise HTTPException(status_code=400, detail="Amount must be positive")
-    account = get_account_by_user_id(session, current_user.user_id)
+    account = get_account_by_user_id(session, current_user.id)
     update_account_balance(session, account, account.balance + amount)
-    return {"message": "Deposit successful", "new_balance": account.balance + amount}
+    return {"message": "Deposit successful", "balance": account.balance + amount}
 
 # Эндпоинты для работы с товарами
 @app.post("/items", response_model=ItemResponse)
@@ -132,29 +131,32 @@ def create_item(item: ItemCreate, session: Session = Depends(get_session)):
     session.add(db_item)
     session.commit()
     session.refresh(db_item)
-    return db_item
+    return ItemResponse.from_orm(db_item)
 
 @app.get("/items/{item_id}", response_model=ItemResponse)
 def get_item(item_id: int, session: Session = Depends(get_session)):
     item = session.get(ItemDB, item_id)
     if not item:
         raise HTTPException(status_code=404, detail="Item not found")
-    return item
+    return ItemResponse.from_orm(item)
 
 @app.get("/items", response_model=List[ItemResponse])
 def get_items(skip: int = 0, limit: int = 100, session: Session = Depends(get_session)):
     items = session.query(ItemDB).offset(skip).limit(limit).all()
-    return items
+    item_responses = [ItemResponse.from_orm(item) for item in items]
+
+    return item_responses
+
 
 # Эндпоинты для работы с предсказаниями
-@app.post("/prediction", response_model=PredictionResponse)
+@app.post("/predictions", response_model=PredictionResponse)
 def create_prediction(
     request: PredictionRequest,
     current_user = Depends(get_current_user),
     session: Session = Depends(get_session)
 ):
     # Проверяем баланс пользователя
-    account = get_account_by_user_id(session, current_user.user_id)
+    account = get_account_by_user_id(session, current_user.id)
     if account.balance < EXECUTION_COST:
         raise HTTPException(status_code=402, detail="Insufficient funds")
     
@@ -165,7 +167,7 @@ def create_prediction(
     
     # Создаем предсказание
     prediction = Prediction(
-        user_id=current_user.user_id,
+        user_id=current_user.id,
         item_id=request.item_id,
         status="pending"
     )
@@ -181,9 +183,9 @@ def create_prediction(
         "prediction_id": prediction.prediction_id
     })
     
-    return prediction
+    return PredictionResponse.from_orm(prediction)
 
-@app.get("/prediction/{prediction_id}", response_model=PredictionResponse)
+@app.get("/predictions/{prediction_id}", response_model=PredictionResponse)
 def get_prediction(
     prediction_id: int,
     current_user = Depends(get_current_user),
@@ -194,20 +196,22 @@ def get_prediction(
         raise HTTPException(status_code=404, detail="Prediction not found")
     
     # Проверяем, что предсказание принадлежит пользователю
-    if prediction.user_id != current_user.user_id:
+    if prediction.user_id != current_user.id:
         raise HTTPException(status_code=403, detail="Not enough permissions")
     
-    return prediction
+    return PredictionResponse.from_orm(prediction)
 
-@app.get("/prediction", response_model=List[PredictionResponse])
+@app.get("/predictions", response_model=List[PredictionResponse])
 def get_predictions(
     current_user = Depends(get_current_user),
     session: Session = Depends(get_session)
 ):
     predictions = session.query(Prediction).filter(
-        Prediction.user_id == current_user.user_id
+        Prediction.user_id == current_user.id
     ).all()
-    return predictions
+
+    predictions_response = [PredictionResponse.from_orm(prediction) for prediction in predictions]
+    return predictions_response
 
 if __name__ == "__main__":
     import uvicorn

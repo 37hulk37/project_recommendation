@@ -1,19 +1,18 @@
-import streamlit as st
+from typing import Dict
+
 import requests
-import json
-from typing import Dict, Optional
+import streamlit as st
 
 API_URL = "http://localhost:8000"
 
 class APIClient:
-    def __init__(self):
-        self.token: Optional[str] = None
         
     def set_token(self, token: str):
-        self.token = token
+        st.session_state["token"] = token
         
     def get_headers(self) -> Dict:
-        return {"Authorization": f"Bearer {self.token}"} if self.token else {}
+        token = st.session_state["token"]
+        return {"Authorization": f"Bearer {token}"}
     
     def register(self, name: str, email: str, password: str, male: bool) -> Dict:
         response = requests.post(
@@ -24,7 +23,7 @@ class APIClient:
     
     def login(self, email: str, password: str) -> Dict:
         response = requests.post(
-            f"{API_URL}/token",
+            f"{API_URL}/login",
             data={"username": email, "password": password}
         )
         return response.json()
@@ -70,6 +69,7 @@ class APIClient:
             params={"skip": skip, "limit": limit},
             headers=self.get_headers()
         )
+        print(response.json())
         return response.json()
 
 #Инициализация клиента
@@ -89,8 +89,9 @@ def show_auth_page():
             if submit:
                 try:
                     response = api_client.login(email, password)
-                    if "access_token" in response:
-                        api_client.set_token(response["access_token"])
+                    token = response["access_token"]
+                    if token:
+                        api_client.set_token(token)
                         st.session_state.authenticated = True
                         st.success("Успешный вход!")
                         st.rerun()
