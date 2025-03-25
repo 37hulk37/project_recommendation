@@ -1,0 +1,52 @@
+version: '3.8'
+
+services:
+  app:
+    build: ./app
+    container_name: recomendation-app
+    env_file:
+      - app/.env
+    ports:
+      - "8000:8000"
+    volumes:
+      - ./app:/app
+    depends_on:
+      - rabbitmq
+      - database
+
+  web-proxy:
+    image: nginx:latest
+    container_name: recomendation-proxy
+    ports:
+      - "80:80"
+      - "443:443"
+    depends_on:
+      - app
+    volumes:
+      - ./nginx.conf:/etc/nginx/nginx.conf:ro
+
+  rabbitmq:
+    image: rabbitmq:management
+    container_name: recomendation-rabbitmq
+    ports:
+      - "15672:15672"
+      - "5672:5672"
+    volumes:
+      - rabbitmq_data:/var/lib/rabbitmq
+    restart: unless-stopped
+
+  database:
+    image: postgres:latest
+    container_name: recomendation-db
+    environment:
+      POSTGRES_DB: postgres
+      POSTGRES_USER: myuser
+      POSTGRES_PASSWORD: mypassword
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+
+volumes:
+  rabbitmq_data:
+  postgres_data:
