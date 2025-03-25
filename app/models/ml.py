@@ -1,7 +1,6 @@
-from datetime import datetime
 from typing import List
 
-from sqlalchemy import Column, Integer, String, DateTime, ForeignKey
+from sqlalchemy import Column, Integer, String, ForeignKey
 from sqlalchemy.orm import relationship
 from sqlmodel import Session
 
@@ -17,12 +16,6 @@ class MLModel(Base):
 
     id = Column(Integer, primary_key=True, index=True)
     name = Column(String, nullable=False)
-    version = Column(String, nullable=False)
-    created_at = Column(DateTime, default=datetime.utcnow)
-    updated_at = Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
-    status = Column(String, nullable=False)  # active, inactive, deprecated
-    model_path = Column(String, nullable=False)
-    description = Column(String, nullable=True)
 
     # Отношения
     ml_tasks = relationship("MLTask", back_populates="model")
@@ -35,9 +28,9 @@ class MLModel(Base):
         # Временная заглушка - возвращаем первый элемент
         return clothing_items[0]
 
-    def execute(self, session: Session) -> Item:
-        user = get_user_by_id(session, self.user_id)
-        user_account = get_account_by_user_id(session, self.user_id)
+    def execute(self, session: Session, user_id: int) -> Item:
+        user = get_user_by_id(session, user_id)
+        user_account = get_account_by_user_id(session, user_id)
 
         if not user or not user_account:
             raise ValueError("Пользователь или аккаунт не найден")

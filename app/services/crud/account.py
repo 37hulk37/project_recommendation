@@ -5,7 +5,7 @@ from app.models import Account
 
 
 def get_account_by_user_id(session: Session, user_id: int) -> Optional[Account]:
-    return session.query(Account).filter(Account.user_id == user_id).first()
+    return session.query(Account).filter(Account.id == user_id).first()
 
 
 def update_account_balance(session: Session, account: Account, new_balance: float) -> Account:
