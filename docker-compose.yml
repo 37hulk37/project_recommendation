@@ -11,10 +11,9 @@ services:
     volumes:
       - ./app:/app
     depends_on:
-      rabbitmq:
-        condition: service_healthy
-      database:
-        condition: service_healthy
+      - rabbitmq
+      - database
+
 
   web-proxy:
     image: nginx:latest
@@ -36,10 +35,8 @@ services:
     volumes:
       - ./app:/app
     depends_on:
-      database:
-        condition: service_healthy
-      rabbitmq:
-        condition: service_healthy
+      - rabbitmq
+      - database
 
   worker2:
     build: ./app
@@ -50,10 +47,8 @@ services:
     volumes:
       - ./app:/app
     depends_on:
-      database:
-        condition: service_healthy
-      rabbitmq:
-        condition: service_healthy
+      - rabbitmq
+      - database
 
   rabbitmq:
     image: rabbitmq:3-management
@@ -67,11 +62,6 @@ services:
     volumes:
       - rabbitmq_data:/var/lib/rabbitmq
     restart: unless-stopped
-    healthcheck:
-      test: ["CMD", "rabbitmq-diagnostics", "check_port_connectivity"]
-      interval: 30s
-      timeout: 10s
-      retries: 5
 
   database:
     image: postgres:13
@@ -84,11 +74,6 @@ services:
       - "5432:5432"
     volumes:
       - postgres_data:/var/lib/postgresql/data
-    healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U myuser -d postgres"]
-      interval: 10s
-      timeout: 5s
-      retries: 5
 
 volumes:
   rabbitmq_data:

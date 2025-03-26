@@ -41,6 +41,8 @@ def init_db():
         conn.execute(text('DROP TABLE IF EXISTS "item" CASCADE'))
         conn.execute(text('DROP TABLE IF EXISTS "account" CASCADE'))
         conn.execute(text('DROP TABLE IF EXISTS "user" CASCADE'))
+        # Удаляем последовательность, если она существует
+        conn.execute(text('DROP SEQUENCE IF EXISTS user_id_seq CASCADE'))
         conn.commit()
     
     # Затем создаем все таблицы заново

@@ -71,18 +71,19 @@ async def get_current_user(token: str = Depends(oauth2_scheme), session: Session
 
 @app.on_event("startup")
 async def startup_event():
-    init_db()
-    # Создаем демо пользователя при запуске
-    session = next(get_session())
-    demo_email = "demo@example.com"
-    if not get_user_by_email(session, demo_email):
-        demo_user = UserCreate(
-            email=demo_email,
-            password="demo123",
-            name="Demo User",
-            male=True
-        )
-        register_user(session=session, **demo_user.model_dump())
+    print("Startup event")
+    # init_db()
+    # # Создаем демо пользователя при запуске
+    # session = next(get_session())
+    # demo_email = "demo@example.com"
+    # if not get_user_by_email(session, demo_email):
+    #     demo_user = UserCreate(
+    #         email=demo_email,
+    #         password="demo123",
+    #         name="Demo User",
+    #         male=True
+    #     )
+    #     register_user(session=session, **demo_user.model_dump())
 
 # Эндпоинты аутентификации
 @app.post("/register", response_model=UserResponse)
@@ -175,13 +176,14 @@ def create_prediction(
     session.commit()
     session.refresh(prediction)
     
-    # Списываем средства
-    update_account_balance(session, account, account.balance - EXECUTION_COST)
-    
     # Отправляем задачу в очередь
     queue_service.publish_task({
         "prediction_id": prediction.prediction_id
     })
+    # Списываем средства
+    update_account_balance(session, account, account.balance - EXECUTION_COST)
+    
+    
     
     return PredictionResponse.from_orm(prediction)
 
