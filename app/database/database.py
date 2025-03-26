@@ -1,7 +1,7 @@
 import time
 
-from sqlalchemy import create_engine, text
-from sqlalchemy.exc import OperationalError
+from sqlalchemy import create_engine, text, inspect
+from sqlalchemy.exc import OperationalError, IntegrityError
 from sqlalchemy.orm import sessionmaker, declarative_base
 
 from .config import get_settings
@@ -34,16 +34,17 @@ def get_session():
         yield session
 
 def init_db():
-    # Сначала удаляем все таблицы с зависимостями
-    with engine.connect() as conn:
-        conn.execute(text('DROP TABLE IF EXISTS "similar_item" CASCADE'))
-        conn.execute(text('DROP TABLE IF EXISTS "prediction" CASCADE'))
-        conn.execute(text('DROP TABLE IF EXISTS "item" CASCADE'))
-        conn.execute(text('DROP TABLE IF EXISTS "account" CASCADE'))
-        conn.execute(text('DROP TABLE IF EXISTS "user" CASCADE'))
-        # Удаляем последовательность, если она существует
-        conn.execute(text('DROP SEQUENCE IF EXISTS user_id_seq CASCADE'))
-        conn.commit()
+    inspector = inspect(engine)
+    existing_tables = inspector.get_table_names()
     
-    # Затем создаем все таблицы заново
-    Base.metadata.create_all(engine)
+    # Если таблицы уже существуют, не пытаемся их пересоздать
+    if existing_tables:
+        return
+        
+    try:
+        # Создаем все таблицы
+        Base.metadata.create_all(engine)
+    except IntegrityError as e:
+        # Если возникла ошибка уникальности, игнорируем её
+        # так как это может означать, что таблицы уже созданы другим процессом
+        pass

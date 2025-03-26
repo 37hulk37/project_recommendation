@@ -71,19 +71,18 @@ async def get_current_user(token: str = Depends(oauth2_scheme), session: Session
 
 @app.on_event("startup")
 async def startup_event():
-    print("Startup event")
-    # init_db()
-    # # Создаем демо пользователя при запуске
-    # session = next(get_session())
-    # demo_email = "demo@example.com"
-    # if not get_user_by_email(session, demo_email):
-    #     demo_user = UserCreate(
-    #         email=demo_email,
-    #         password="demo123",
-    #         name="Demo User",
-    #         male=True
-    #     )
-    #     register_user(session=session, **demo_user.model_dump())
+    init_db()
+    # Создаем демо пользователя при запуске
+    session = next(get_session())
+    demo_email = "demo@example.com"
+    if not get_user_by_email(session, demo_email):
+        demo_user = UserCreate(
+            email=demo_email,
+            password="demo123",
+            name="Demo User",
+            male=True
+        )
+        register_user(session=session, **demo_user.model_dump())
 
 # Эндпоинты аутентификации
 @app.post("/register", response_model=UserResponse)
@@ -93,12 +92,14 @@ def create_user(user: UserCreate, session: Session = Depends(get_session)):
         raise HTTPException(status_code=400, detail="Email already registered")
     user_dict = user.dict()
     user_dict["password"] = get_password_hash(user_dict["password"])
-    return UserResponse.from_orm(register_user(session=session, **user_dict))
+    return UserResponse.from_orm(register_user(session=session, **user_dict.model_dump()))
 
 @app.post("/login", response_model=Token)
 async def login(form_data: OAuth2PasswordRequestForm = Depends(), session: Session = Depends(get_session)):
     user = get_user_by_email(session, form_data.username)
     if not user or not verify_password(form_data.password, user.password):
+        print(user)
+        print(verify_password(form_data.password, user.password))
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
             detail="Incorrect email or password",

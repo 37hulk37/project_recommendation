@@ -19,6 +19,7 @@ class APIClient:
             f"{API_URL}/register",
             json={"name": name, "email": email, "password": password, "male": male}
         )
+        print(response.json())
         return response.json()
     
     def login(self, email: str, password: str) -> Dict:
@@ -26,6 +27,7 @@ class APIClient:
             f"{API_URL}/login",
             data={"username": email, "password": password}
         )
+        print(response.json())
         return response.json()
     
     def get_account(self) -> Dict:
@@ -111,7 +113,7 @@ def show_auth_page():
             if submit:
                 try:
                     response = api_client.register(name, email, password, male)
-                    if "user_id" in response:
+                    if "id" in response:
                         st.success("Регистрация успешна! Теперь вы можете войти.")
                     else:
                         st.error("Ошибка регистрации")
